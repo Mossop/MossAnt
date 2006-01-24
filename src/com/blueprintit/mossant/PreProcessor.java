@@ -124,11 +124,18 @@ public class PreProcessor extends Reader
 						String value=matcher.group(2);
 						if (value==null)
 							value="";
+						else
+							value=processDefines(value);
 						defines.put(matcher.group(1),value);
 						return true;
 					}
 				}
 				return false;
+			}
+			else if (verb.equals("undef"))
+			{
+				defines.remove(line);
+				return true;
 			}
 			else if (verb.equals("include"))
 			{
