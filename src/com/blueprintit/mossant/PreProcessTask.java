@@ -72,9 +72,12 @@ public class PreProcessTask extends Task implements ProcessorEnvironment
 			String line = reader.readLine();
 			while (line!=null)
 			{
-				writer.write(line);
+				writer.write(line+"\n");
 				line=reader.readLine();
 			}
+			writer.flush();
+			reader.close();
+			writer.close();
 		}
 		catch (IOException e)
 		{
@@ -149,6 +152,23 @@ public class PreProcessTask extends Task implements ProcessorEnvironment
 
 	public String processLine(String text)
 	{
-		return getProject().replaceProperties(text);
+		int pos = text.lastIndexOf("${");
+		if (pos>=0)
+		{
+			StringBuilder line = new StringBuilder(text);
+			while (pos>=0)
+			{
+				int end = line.indexOf("}",pos);
+				if (end>=0)
+				{
+					String value = getProject().getProperty(line.substring(pos+2,end));
+					if (value!=null)
+						line.replace(pos,end+1,value);
+				}
+				pos=line.lastIndexOf("${",pos-1);
+			}
+			return line.toString();
+		}
+		return text;
 	}
 }
