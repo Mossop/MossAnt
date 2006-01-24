@@ -207,6 +207,7 @@ public class Fifo
 						buffers[i]=null;
 					buffercount-=diff;
 					startoffset-=(BUFFER_LENGTH*bottom);
+					endoffset-=(BUFFER_LENGTH*bottom);
 				}
 			}
 		}
@@ -238,6 +239,7 @@ public class Fifo
 	
 	public void write(char[] buffer, int offset, int length) throws IOException
 	{
+		System.out.println("Write "+length);
 		setCapacity(getCount()+length);
 		
 		int buffpos = endoffset / BUFFER_LENGTH;
@@ -294,6 +296,7 @@ public class Fifo
 			return -1;
 		
 		length=Math.min(length,getCount());
+		System.out.println("Read "+length);
 		
 		int buffpos = startoffset / BUFFER_LENGTH;
 		int buffoff = startoffset % BUFFER_LENGTH;

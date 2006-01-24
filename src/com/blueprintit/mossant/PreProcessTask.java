@@ -14,12 +14,14 @@ import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.types.FileSet;
 import org.apache.tools.ant.types.Mapper;
+import org.apache.tools.ant.types.Path;
 import org.apache.tools.ant.util.FileNameMapper;
 
-public class PreProcessTask extends Task
+public class PreProcessTask extends Task implements ProcessorEnvironment
 {
 	private List filesets = new ArrayList();
 	private Mapper mapper;
+	private Path includes;
 	private File destdir;
 	private boolean failonerror;
 	private boolean overwrite;
@@ -27,6 +29,12 @@ public class PreProcessTask extends Task
 	public void addFileset(FileSet fileset)
 	{
 		filesets.add(fileset);
+	}
+	
+	public Path createIncludes()
+	{
+		includes = new Path(getProject());
+		return includes;
 	}
 	
 	public Mapper createMapper()
@@ -58,6 +66,7 @@ public class PreProcessTask extends Task
 		try
 		{
 			PreProcessor processor = new PreProcessor(source);
+			processor.setEnvironment(this);
 			BufferedReader reader = new BufferedReader(processor);
 			FileWriter writer = new FileWriter(target);
 			String line = reader.readLine();
@@ -118,5 +127,28 @@ public class PreProcessTask extends Task
 				}
 			}
 		}
+	}
+
+	// Ant Processor Environment
+	
+	public File getIncludedFile(String path)
+	{
+		if (includes==null)
+			return null;
+		
+		String[] dirs = includes.list();
+		for (int i=0; i<dirs.length; i++)
+		{
+			File dir = new File(getProject().getBaseDir(), dirs[i]);
+			File file = new File(dir,path);
+			if ((file.exists())&&(file.isFile()))
+				return file;
+		}
+		return null;
+	}
+
+	public String processLine(String text)
+	{
+		return getProject().replaceProperties(text);
 	}
 }

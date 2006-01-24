@@ -6,6 +6,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,7 +63,7 @@ public class PreProcessor extends Reader
 	private abstract class ControlState
 	{
 		protected int startline;
-		private State fromstate;
+		protected State fromstate;
 		protected ControlState parent;
 		
 		protected ControlState(ControlState parent)
@@ -93,7 +96,7 @@ public class PreProcessor extends Reader
 			if (parent!=null)
 				parent.handleLine(line);
 			else
-				fifo.write(line+"\n");
+				fifo.write(processDefines(line)+"\n");
 		}
 		
 		public void close() throws IOException
@@ -112,11 +115,41 @@ public class PreProcessor extends Reader
 		{
 			if (verb.equals("define"))
 			{
-				return true;
+				Pattern pattern = Pattern.compile("^(\\S*)(?:\\s+(.*))?$");
+				Matcher matcher = pattern.matcher(line);
+				if (matcher.matches())
+				{
+					if (!defines.containsKey(matcher.group(1)))
+					{
+						String value=matcher.group(2);
+						if (value==null)
+							value="";
+						defines.put(matcher.group(1),value);
+						return true;
+					}
+				}
+				return false;
 			}
 			else if (verb.equals("include"))
 			{
-				return true;
+				File include = null;
+				if ((line.charAt(0)=='"')&&(line.charAt(line.length()-1)=='"'))
+				{
+					include = new File(fromstate.file,line.substring(1,line.length()-2));
+				}
+				else if ((line.charAt(0)=='<')&&(line.charAt(line.length()-1)=='>'))
+				{
+					include = searchIncludes(line.substring(1,line.length()-2));
+				}
+				if (include!=null)
+				{
+					pushState(include, new BufferedReader(new FileReader(include)));
+					return true;
+				}
+				else
+				{
+					return false;
+				}
 			}
 			else if (verb.equals("foobar"))
 			{
@@ -140,6 +173,7 @@ public class PreProcessor extends Reader
 	private class IfControl extends ControlState
 	{
 		private boolean displaying = true;
+		private boolean displayed = false;
 		
 		public IfControl(ControlState parent)
 		{
@@ -148,14 +182,49 @@ public class PreProcessor extends Reader
 
 		public void initialise(String verb, String line)
 		{
-			displaying=verb.equals("ifdef");
+			if (verb.equals("ifdef"))
+			{
+				displaying=defines.containsKey(line);
+			}
+			else if (verb.equals("ifndef"))
+			{
+				displaying=!defines.containsKey(line);
+			}
+			displayed=displaying;
 		}
 		
 		public boolean handleDirective(String verb, String line) throws IOException
 		{
 			if (verb.equals("else"))
 			{
-				displaying=!displaying;
+				displaying=!displayed;
+				displayed=true;
+				return true;
+			}
+			else if (verb.equals("elifdef"))
+			{
+				if (!displayed)
+				{
+					displaying=defines.containsKey(line);
+					displayed=displaying;
+				}
+				else
+				{
+					displaying=false;
+				}
+				return true;
+			}
+			else if (verb.equals("elifndef"))
+			{
+				if (!displayed)
+				{
+					displaying=!defines.containsKey(line);
+					displayed=displaying;
+				}
+				else
+				{
+					displaying=false;
+				}
 				return true;
 			}
 			else if (verb.equals("endif"))
@@ -184,6 +253,10 @@ public class PreProcessor extends Reader
 	private State state = null;
 	private Fifo fifo = new Fifo();
 	private ControlState control = null;
+	private Map defines = new HashMap();
+	private ProcessorEnvironment environment;
+	
+	private boolean blankdirectives = false;
 	
 	protected PreProcessor(Reader reader)
 	{
@@ -197,7 +270,46 @@ public class PreProcessor extends Reader
 		pushState(file,in);
 		control = new BaseControl(null);
 	}
+	
+	public void setEnvironment(ProcessorEnvironment env)
+	{
+		environment=env;
+	}
 
+	private String processDefines(String text)
+	{
+		StringBuilder builder = new StringBuilder(text);
+		boolean changed = false;
+		do
+		{
+			changed=false;
+			Iterator loop = defines.keySet().iterator();
+			while (loop.hasNext())
+			{
+				String define = (String)loop.next();
+				int pos = builder.indexOf(define);
+				while (pos>=0)
+				{
+					changed=true;
+					builder.replace(pos,pos+define.length(),(String)defines.get(define));
+					pos=builder.indexOf(define);
+				}
+			}
+		} while (changed);
+		if (environment!=null)
+			return environment.processLine(builder.toString());
+
+		return builder.toString();
+	}
+	
+	private File searchIncludes(String path)
+	{
+		if (environment!=null)
+			return environment.getIncludedFile(path);
+
+		return null;
+	}
+	
 	private void pushState(File base, BufferedReader reader)
 	{
 		state = new State(state, base, reader);
@@ -250,7 +362,12 @@ public class PreProcessor extends Reader
 			Matcher matcher = pattern.matcher(line);
 			if (matcher.matches())
 			{
-				if (!control.handleDirective(matcher.group(1),matcher.group(2)))
+				if (control.handleDirective(matcher.group(1),matcher.group(2)))
+				{
+					if (blankdirectives)
+						fifo.write("\n");
+				}
+				else
 					control.handleLine(line);
 			}
 			else

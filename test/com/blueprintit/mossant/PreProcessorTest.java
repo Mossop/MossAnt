@@ -95,11 +95,37 @@ public class PreProcessorTest extends TestCase
 		assertEquals("Check text", target.toString(), builder.toString());
 	}
 
+	public void testDefines() throws IOException
+	{
+		StringBuilder source = new StringBuilder();
+		source.append("#define TEST\n");
+		source.append("#define BOB test\n");
+		source.append("This is a TEST.\n");
+		source.append("This is a BOB.\n");
+
+		StringBuilder target = new StringBuilder();
+		target.append("This is a .\n");
+		target.append("This is a test.\n");
+
+		StringReader sourcereader = new StringReader(source.toString());
+		BufferedReader reader = new BufferedReader(new PreProcessor(sourcereader));
+		StringBuilder builder = new StringBuilder();
+		String line = reader.readLine();
+		while (line!=null)
+		{
+			builder.append(line);
+			builder.append("\n");
+			line=reader.readLine();
+		}
+		assertEquals("Check text", target.toString(), builder.toString());
+	}
+
 	public void testIfDefDirective() throws IOException
 	{
 		StringBuilder source = new StringBuilder();
+		source.append("#define TEST\n");
 		source.append("test1\n");
-		source.append("#ifdef\n");
+		source.append("#ifdef TEST\n");
 		source.append("test2\n");
 		source.append("#else\n");
 		source.append("test3\n");
@@ -126,7 +152,7 @@ public class PreProcessorTest extends TestCase
 	{
 		StringBuilder source = new StringBuilder();
 		source.append("test1\n");
-		source.append("#ifndef\n");
+		source.append("#ifndef TEST\n");
 		source.append("test2\n");
 		source.append("#else\n");
 		source.append("test3\n");
@@ -134,7 +160,7 @@ public class PreProcessorTest extends TestCase
 
 		StringBuilder target = new StringBuilder();
 		target.append("test1\n");
-		target.append("test3\n");
+		target.append("test2\n");
 
 		StringReader sourcereader = new StringReader(source.toString());
 		BufferedReader reader = new BufferedReader(new PreProcessor(sourcereader));
@@ -152,9 +178,10 @@ public class PreProcessorTest extends TestCase
 	public void testNestedIfDirective() throws IOException
 	{
 		StringBuilder source = new StringBuilder();
+		source.append("#define TEST\n");
 		source.append("test1\n");
-		source.append("#ifdef\n");
-		source.append("#ifndef\n");
+		source.append("#ifdef TEST\n");
+		source.append("#ifndef TEST\n");
 		source.append("test2\n");
 		source.append("#else\n");
 		source.append("test3\n");
@@ -178,5 +205,19 @@ public class PreProcessorTest extends TestCase
 			line=reader.readLine();
 		}
 		assertEquals("Check text", target.toString(), builder.toString());
+	}
+
+	public void testRealFile() throws IOException
+	{
+		BufferedReader reader = new BufferedReader(new PreProcessor(new File("C:\\UserData\\Dave\\Documents\\Eclipse\\Nightly\\chrome\\nightly\\content\\nightly.js.in")));
+		StringBuilder builder = new StringBuilder();
+		String line = reader.readLine();
+		while (line!=null)
+		{
+			//System.out.println(line);
+			builder.append(line);
+			builder.append("\n");
+			line=reader.readLine();
+		}
 	}
 }
