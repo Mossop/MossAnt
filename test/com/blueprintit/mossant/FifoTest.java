@@ -127,7 +127,6 @@ public class FifoTest extends TestCase
 		Fifo fifo = new Fifo(10,10);
 		fifo.write("1234567890ABCDEFGHIJ");
 		fifo.read(11);
-		fifo.dump();
 		assertEquals("Count", 9, fifo.getCount());
 		assertEquals("Capacity", 10, fifo.getCapacity());
 		assertEquals("Result", "BCDEFGHIJ", fifo.read(9));

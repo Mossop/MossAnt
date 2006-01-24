@@ -85,7 +85,7 @@ public class PreProcessor extends Reader
 			if (parent!=null)
 				return parent.handleDirective(verb, line);
 			else
-				return false;
+				return true;
 		}
 		
 		public void handleLine(String line) throws IOException
@@ -93,7 +93,7 @@ public class PreProcessor extends Reader
 			if (parent!=null)
 				parent.handleLine(line);
 			else
-				fifo.write(line);
+				fifo.write(line+"\n");
 		}
 		
 		public void close() throws IOException
@@ -110,15 +110,20 @@ public class PreProcessor extends Reader
 
 		public boolean handleDirective(String verb, String line) throws IOException
 		{
-			if (line.equals("define"))
+			if (verb.equals("define"))
 			{
 				return true;
 			}
-			else if (line.equals("include"))
+			else if (verb.equals("include"))
 			{
 				return true;
 			}
-			else if ((line.equals("ifdef"))||(line.equals("ifndef")))
+			else if (verb.equals("foobar"))
+			{
+				fifo.write("FOOBAR!!!\n");
+				return true;
+			}
+			else if ((verb.equals("ifdef"))||(verb.equals("ifndef")))
 			{
 				IfControl newcontrol = new IfControl(control);
 				newcontrol.initialise(verb,line);
@@ -143,6 +148,7 @@ public class PreProcessor extends Reader
 
 		public void initialise(String verb, String line)
 		{
+			displaying=verb.equals("ifdef");
 		}
 		
 		public boolean handleDirective(String verb, String line) throws IOException
@@ -199,7 +205,7 @@ public class PreProcessor extends Reader
 	
 	private void popState() throws IOException
 	{
-		while (control.getState()==state)
+		while ((control!=null)&&(control.getState()==state))
 		{
 			popControl(control);
 		}
@@ -235,18 +241,12 @@ public class PreProcessor extends Reader
 			line=state.readLine();
 			if (line==null)
 			{
-				state.close();
-				while (control.fromstate==state)
-				{
-					control.close();
-					popControl(control);
-				}
 				popState();
 			}
 		}
 		if (line!=null)
 		{
-			Pattern pattern = Pattern.compile("^#(\\W+)(?:\\w*(.*))?$");
+			Pattern pattern = Pattern.compile("^#(\\w+)\\s*(.*)?\\s*$");
 			Matcher matcher = pattern.matcher(line);
 			if (matcher.matches())
 			{
@@ -264,11 +264,9 @@ public class PreProcessor extends Reader
 	
 	public int read() throws IOException
 	{
-		while (hasState())
-		{
-			if (fifo.getCount()<1)
-				parseMore();
-		}
+		while ((hasState())&&(fifo.getCount()<1))
+			parseMore();
+
 		return fifo.read();
 	}
 
@@ -279,11 +277,9 @@ public class PreProcessor extends Reader
 	
 	public int read(char[] buffer, int offs, int length) throws IOException
 	{
-		while (hasState())
-		{
-			if (fifo.getCount()<length)
-				parseMore();
-		}
+		while ((hasState())&&(fifo.getCount()<length))
+			parseMore();
+
 		return fifo.read(buffer,offs,length);
 	}
 

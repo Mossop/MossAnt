@@ -11,6 +11,7 @@ public class AllTests
 		TestSuite suite = new TestSuite("Test for com.blueprintit.mossant");
 		//$JUnit-BEGIN$
 		suite.addTestSuite(FifoTest.class);
+		suite.addTestSuite(PreProcessorTest.class);
 		//$JUnit-END$
 		return suite;
 	}
