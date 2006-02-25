@@ -71,6 +71,33 @@ public class PreProcessorTest extends TestCase
 		assertEquals("Check text", target.toString(), builder.toString());
 	}
 
+	public void testModFoobar() throws IOException
+	{
+		StringBuilder source = new StringBuilder();
+		source.append("test1\n");
+		source.append("+++foobar\n");
+		source.append("test3\n");
+
+		StringBuilder target = new StringBuilder();
+		target.append("test1\n");
+		target.append("FOOBAR!!!\n");
+		target.append("test3\n");
+
+		StringReader sourcereader = new StringReader(source.toString());
+		PreProcessor processor = new PreProcessor(sourcereader);
+		processor.setMarker("+++");
+		BufferedReader reader = new BufferedReader(processor);
+		StringBuilder builder = new StringBuilder();
+		String line = reader.readLine();
+		while (line!=null)
+		{
+			builder.append(line);
+			builder.append("\n");
+			line=reader.readLine();
+		}
+		assertEquals("Check text", target.toString(), builder.toString());
+	}
+
 	public void testBadDirective() throws IOException
 	{
 		StringBuilder source = new StringBuilder();
@@ -205,19 +232,5 @@ public class PreProcessorTest extends TestCase
 			line=reader.readLine();
 		}
 		assertEquals("Check text", target.toString(), builder.toString());
-	}
-
-	public void testRealFile() throws IOException
-	{
-		BufferedReader reader = new BufferedReader(new PreProcessor(new File("C:\\UserData\\Dave\\Documents\\Eclipse\\Nightly\\chrome\\nightly\\content\\nightly.js.in")));
-		StringBuilder builder = new StringBuilder();
-		String line = reader.readLine();
-		while (line!=null)
-		{
-			//System.out.println(line);
-			builder.append(line);
-			builder.append("\n");
-			line=reader.readLine();
-		}
 	}
 }

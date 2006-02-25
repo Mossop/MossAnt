@@ -106,6 +106,8 @@ public class PreProcessor extends Reader
 	
 	private class BaseControl extends ControlState
 	{
+		private Pattern definePattern = Pattern.compile("^(\\S*)(?:\\s+(.*))?$");
+		
 		public BaseControl(ControlState parent)
 		{
 			super(parent);
@@ -115,8 +117,7 @@ public class PreProcessor extends Reader
 		{
 			if (verb.equals("define"))
 			{
-				Pattern pattern = Pattern.compile("^(\\S*)(?:\\s+(.*))?$");
-				Matcher matcher = pattern.matcher(line);
+				Matcher matcher = definePattern.matcher(line);
 				if (matcher.matches())
 				{
 					if (!defines.containsKey(matcher.group(1)))
@@ -142,11 +143,11 @@ public class PreProcessor extends Reader
 				File include = null;
 				if ((line.charAt(0)=='"')&&(line.charAt(line.length()-1)=='"'))
 				{
-					include = new File(fromstate.file,line.substring(1,line.length()-2));
+					include = new File(fromstate.file.getParentFile(),line.substring(1,line.length()-1));
 				}
 				else if ((line.charAt(0)=='<')&&(line.charAt(line.length()-1)=='>'))
 				{
-					include = searchIncludes(line.substring(1,line.length()-2));
+					include = searchIncludes(line.substring(1,line.length()-1));
 				}
 				if (include!=null)
 				{
@@ -263,19 +264,35 @@ public class PreProcessor extends Reader
 	private Map defines = new HashMap();
 	private ProcessorEnvironment environment;
 	
+	private Pattern directive;
+	
+	private String marker = "#";
 	private boolean blankdirectives = false;
+	
+	private PreProcessor()
+	{
+		directive = Pattern.compile("^"+Pattern.quote(marker)+"(\\w+)\\s*(.*)?\\s*$");
+	}
 	
 	protected PreProcessor(Reader reader)
 	{
+		this();
 		pushState(null,new BufferedReader(reader));
 		control = new BaseControl(null);
 	}
 	
 	protected PreProcessor(File file) throws FileNotFoundException
 	{
+		this();
 		BufferedReader in = new BufferedReader(new FileReader(file));
 		pushState(file,in);
 		control = new BaseControl(null);
+	}
+	
+	public void setMarker(String marker)
+	{
+		this.marker=marker;
+		directive = Pattern.compile("^"+Pattern.quote(marker)+"(\\w+)\\s*(.*)?\\s*$");
 	}
 	
 	public void setEnvironment(ProcessorEnvironment env)
@@ -365,8 +382,7 @@ public class PreProcessor extends Reader
 		}
 		if (line!=null)
 		{
-			Pattern pattern = Pattern.compile("^#(\\w+)\\s*(.*)?\\s*$");
-			Matcher matcher = pattern.matcher(line);
+			Matcher matcher = directive.matcher(line);
 			if (matcher.matches())
 			{
 				if (control.handleDirective(matcher.group(1),matcher.group(2)))
