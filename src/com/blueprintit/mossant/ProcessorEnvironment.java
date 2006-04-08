@@ -6,5 +6,7 @@ public interface ProcessorEnvironment
 {
 	public File getIncludedFile(String path);
 	
-	public String processLine(String line);
+	public boolean isDefined(String line);
+	
+	public String processDefines(String line);
 }

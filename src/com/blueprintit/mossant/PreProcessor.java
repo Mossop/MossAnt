@@ -164,7 +164,7 @@ public class PreProcessor extends Reader
 				fifo.write("FOOBAR!!!\n");
 				return true;
 			}
-			else if ((verb.equals("ifdef"))||(verb.equals("ifndef")))
+			else if (verb.startsWith("if"))
 			{
 				IfControl newcontrol = new IfControl(control);
 				newcontrol.initialise(verb,line);
@@ -188,16 +188,22 @@ public class PreProcessor extends Reader
 			super(parent);
 		}
 
+		private boolean meetsCondition(String type, String line)
+		{
+			if (type.equals("def"))
+			{
+				return isDefined(line);
+			}
+			else if (type.equals("ndef"))
+			{
+				return !isDefined(line);
+			}
+			return false;
+		}
+		
 		public void initialise(String verb, String line)
 		{
-			if (verb.equals("ifdef"))
-			{
-				displaying=defines.containsKey(line);
-			}
-			else if (verb.equals("ifndef"))
-			{
-				displaying=!defines.containsKey(line);
-			}
+			displaying=meetsCondition(verb.substring(2), line);
 			displayed=displaying;
 		}
 		
@@ -209,35 +215,21 @@ public class PreProcessor extends Reader
 				displayed=true;
 				return true;
 			}
-			else if (verb.equals("elifdef"))
-			{
-				if (!displayed)
-				{
-					displaying=defines.containsKey(line);
-					displayed=displaying;
-				}
-				else
-				{
-					displaying=false;
-				}
-				return true;
-			}
-			else if (verb.equals("elifndef"))
-			{
-				if (!displayed)
-				{
-					displaying=!defines.containsKey(line);
-					displayed=displaying;
-				}
-				else
-				{
-					displaying=false;
-				}
-				return true;
-			}
 			else if (verb.equals("endif"))
 			{
 				popControl(this);
+				return true;
+			}
+			else if (verb.startsWith("elif"))
+			{
+				if (displayed)
+					displaying=false;
+				else
+				{
+					displaying=meetsCondition(verb.substring(4), line);
+					displayed=displaying;
+				}
+				
 				return true;
 			}
 			else
@@ -300,6 +292,15 @@ public class PreProcessor extends Reader
 		environment=env;
 	}
 
+	private boolean isDefined(String text)
+	{
+		if (defines.containsKey(text))
+			return true;
+		if (environment!=null)
+			return environment.isDefined(text);
+		return false;
+	}
+	
 	private String processDefines(String text)
 	{
 		StringBuilder builder = new StringBuilder(text);
@@ -321,7 +322,7 @@ public class PreProcessor extends Reader
 			}
 		} while (changed);
 		if (environment!=null)
-			return environment.processLine(builder.toString());
+			return environment.processDefines(builder.toString());
 
 		return builder.toString();
 	}

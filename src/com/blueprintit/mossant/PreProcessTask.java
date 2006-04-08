@@ -150,7 +150,15 @@ public class PreProcessTask extends Task implements ProcessorEnvironment
 		return null;
 	}
 
-	public String processLine(String text)
+	public boolean isDefined(String text)
+	{
+		if (text.startsWith("${") && text.endsWith("}"))
+			return getProject().getProperties().containsKey(text.substring(2,text.length()-3));
+
+		return false;
+	}
+	
+	public String processDefines(String text)
 	{
 		int pos = text.lastIndexOf("${");
 		if (pos>=0)
