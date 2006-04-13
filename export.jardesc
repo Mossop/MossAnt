@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jardesc>
-<jar path="C:/UserData/Dave/Eclipse/MossAnt/MossAnt.jar"/>
+<jar path="C:/Java/api/apache-ant-1.6.5/lib/MossAnt.jar"/>
 <options buildIfNeeded="true" compress="true" descriptionLocation="/MossAnt/export.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="true" saveDescription="true" useSourceFolders="false"/>
 <manifest generateManifest="true" manifestLocation="" manifestVersion="1.0" reuseManifest="false" saveManifest="false" usesManifest="true">
 <sealing sealJar="false">

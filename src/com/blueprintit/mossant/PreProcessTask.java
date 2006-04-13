@@ -65,6 +65,8 @@ public class PreProcessTask extends Task implements ProcessorEnvironment
 		log("Preprocessing "+source.getPath()+" to "+target.getPath());
 		try
 		{
+			if (!target.getParentFile().exists())
+				target.getParentFile().mkdirs();
 			PreProcessor processor = new PreProcessor(source);
 			processor.setEnvironment(this);
 			BufferedReader reader = new BufferedReader(processor);
