@@ -155,7 +155,7 @@ public class PreProcessTask extends Task implements ProcessorEnvironment
 	public boolean isDefined(String text)
 	{
 		if (text.startsWith("${") && text.endsWith("}"))
-			return getProject().getProperties().containsKey(text.substring(2,text.length()-3));
+			return getProject().getProperties().containsKey(text.substring(2,text.length()-1));
 
 		return false;
 	}
