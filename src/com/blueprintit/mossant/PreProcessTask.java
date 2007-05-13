@@ -25,6 +25,7 @@ public class PreProcessTask extends Task implements ProcessorEnvironment
 	private File destdir;
 	private boolean failonerror;
 	private boolean overwrite;
+	private String marker = "#";
 	
 	public void addFileset(FileSet fileset)
 	{
@@ -43,12 +44,17 @@ public class PreProcessTask extends Task implements ProcessorEnvironment
 		return mapper;
 	}
 	
+	public void setMarker(String marker)
+	{
+		this.marker = marker;
+	}
+	
 	public void setDestdir(File dest)
 	{
 		destdir=dest;
 	}
 	
-	public void setFaironerror(boolean value)
+	public void setFailonerror(boolean value)
 	{
 		failonerror=value;
 	}
@@ -68,6 +74,7 @@ public class PreProcessTask extends Task implements ProcessorEnvironment
 			if (!target.getParentFile().exists())
 				target.getParentFile().mkdirs();
 			PreProcessor processor = new PreProcessor(source);
+			processor.setMarker(marker);
 			processor.setEnvironment(this);
 			BufferedReader reader = new BufferedReader(processor);
 			FileWriter writer = new FileWriter(target);

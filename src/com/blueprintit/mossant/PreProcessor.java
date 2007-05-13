@@ -88,7 +88,7 @@ public class PreProcessor extends Reader
 			if (parent!=null)
 				return parent.handleDirective(verb, line);
 			else
-				return true;
+				return false;
 		}
 		
 		public void handleLine(String line) throws IOException
