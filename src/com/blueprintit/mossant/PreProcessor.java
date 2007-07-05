@@ -257,13 +257,12 @@ public class PreProcessor extends Reader
 	private ProcessorEnvironment environment;
 	
 	private Pattern directive;
-	
-	private String marker = "#";
-	private boolean blankdirectives = false;
+	private Pattern command;
 	
 	private PreProcessor()
 	{
-		directive = Pattern.compile("^"+Pattern.quote(marker)+"(\\w+)\\s*(.*)?\\s*$");
+		setMarker("#");
+		directive = Pattern.compile("^(\\w+)\\s*(.*)?\\s*$");
 	}
 	
 	protected PreProcessor(Reader reader)
@@ -283,8 +282,7 @@ public class PreProcessor extends Reader
 	
 	public void setMarker(String marker)
 	{
-		this.marker=marker;
-		directive = Pattern.compile("^"+Pattern.quote(marker)+"(\\w+)\\s*(.*)?\\s*$");
+		command = Pattern.compile("^"+Pattern.quote(marker)+"(.*)$");
 	}
 	
 	public void setEnvironment(ProcessorEnvironment env)
@@ -377,27 +375,19 @@ public class PreProcessor extends Reader
 		{
 			line=state.readLine();
 			if (line==null)
-			{
 				popState();
-			}
 		}
 		if (line!=null)
 		{
-			Matcher matcher = directive.matcher(line);
+			Matcher matcher = command.matcher(line);
 			if (matcher.matches())
 			{
-				if (control.handleDirective(matcher.group(1),matcher.group(2)))
-				{
-					if (blankdirectives)
-						fifo.write("\n");
-				}
-				else
-					control.handleLine(line);
+				matcher = directive.matcher(matcher.group(1));
+				if (matcher.matches())
+					control.handleDirective(matcher.group(1),matcher.group(2));
 			}
 			else
-			{
 				control.handleLine(line);
-			}
 		}
 	}
 
